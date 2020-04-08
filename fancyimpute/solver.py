@@ -183,7 +183,7 @@ class Solver(object):
                     self.__class__.__name__,
                     type(X_filled)))
 
-        X_result = self.solve(X_filled, missing_mask)
+        X_result, mae = self.solve(X_filled, missing_mask)
         if not isinstance(X_result, np.ndarray):
             raise TypeError(
                 "Expected %s.solve() to return NumPy array but got %s" % (
@@ -192,7 +192,7 @@ class Solver(object):
 
         X_result = self.project_result(X=X_result)
         X_result[observed_mask] = X_original[observed_mask]
-        return X_result
+        return X_result, mae
 
     def fit(self, X, y=None):
         """

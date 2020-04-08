@@ -89,4 +89,36 @@ class IterativeSVD(Solver):
             X_filled[missing_mask] = X_reconstructed[missing_mask]
             if converged:
                 break
-        return X_filled
+        return X_filled, mae
+
+    def fit_transform(self, X, y=None):
+        """
+        Fit the imputer and then transform input `X`
+
+        Note: all imputations should have a `fit_transform` method,
+        but only some (like IterativeImputer in sklearn) also support inductive
+        mode using `fit` or `fit_transform` on `X_train` and then `transform`
+        on new `X_test`.
+        """
+        X_original, missing_mask = self.prepare_input_data(X)
+        observed_mask = ~missing_mask
+        X = X_original.copy()
+        if self.normalizer is not None:
+            X = self.normalizer.fit_transform(X)
+        X_filled = self.fill(X, missing_mask, inplace=True)
+        if not isinstance(X_filled, np.ndarray):
+            raise TypeError(
+                "Expected %s.fill() to return NumPy array but got %s" % (
+                    self.__class__.__name__,
+                    type(X_filled)))
+
+        X_result, mae = self.solve(X_filled, missing_mask)
+        if not isinstance(X_result, np.ndarray):
+            raise TypeError(
+                "Expected %s.solve() to return NumPy array but got %s" % (
+                    self.__class__.__name__,
+                    type(X_result)))
+
+        X_result = self.project_result(X=X_result)
+        X_result[observed_mask] = X_original[observed_mask]
+        return X_result, mae
